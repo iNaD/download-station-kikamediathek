@@ -1,0 +1,10 @@
+{
+    "name": "kikamediathek",
+    "hostprefix": "kika.de",
+    "displayname": "KIKA Mediathek",
+    "version": "0.1",
+    "authentication": "no",
+    "module": "kikamediathek.php",
+    "class": "SynoFileHostingKIKAMediathek",
+    "description": "Download Videos from KIKA Mediathek"
+}
