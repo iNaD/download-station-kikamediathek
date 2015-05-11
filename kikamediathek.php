@@ -2,90 +2,37 @@
 
 /**
  * @author Daniel Gehn <me@theinad.com>
- * @version 0.1
+ * @version 0.2a
  * @copyright 2015 Daniel Gehn
  * @license http://opensource.org/licenses/MIT Licensed under MIT License
  */
 
-class SynoFileHostingKIKAMediathek {
-    private $Url;
-    private $Username;
-    private $Password;
-    private $HostInfo;
+require_once 'provider.php';
 
-    private $LogPath = '/tmp/kika-mediathek.log';
-    private $LogEnabled = false;
+class SynoFileHostingKIKAMediathek extends TheiNaDProvider {
 
-    public function __construct($Url, $Username = '', $Password = '', $HostInfo = '') {
-        $this->Url = $Url;
-        $this->Username = $Username;
-        $this->Password = $Password;
-        $this->HostInfo = $HostInfo;
+    protected $LogPath = '/tmp/kika-mediathek.log';
 
-        $this->DebugLog("URL: $Url");
-    }
-
-    //This function returns download url.
     public function GetDownloadInfo() {
-        $ret = FALSE;
-
-        $this->DebugLog("GetDownloadInfo called");
-
-        $ret = $this->Download();
-
-        return $ret;
-    }
-
-    public function onDownloaded()
-    {
-    }
-
-    public function Verify($ClearCookie = '')
-    {
-        $this->DebugLog("Verifying User");
-
-        return USER_IS_PREMIUM;
-    }
-
-    //This function gets the download url
-    private function Download() {
         $this->DebugLog("Getting download url $this->Url");
 
-        $curl = curl_init();
+        $rawXML = $this->curlRequest($this->Url);
 
-        curl_setopt($curl, CURLOPT_URL, $this->Url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_USERAGENT, DOWNLOAD_STATION_USER_AGENT);
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-
-        $rawXML = curl_exec($curl);
-
-        if(!$rawXML)
+        if($rawXML === null)
         {
-            $this->DebugLog("Failed to retrieve Website. Error Info: " . curl_error($curl));
             return false;
         }
 
-        curl_close($curl);
-
         if(preg_match('#dataURL:\'(.*?)\'#si', $rawXML, $match) === 1)
         {
-            $curl = curl_init();
+            $RawXMLData = $this->curlRequest('http://www.kika.de/' . $match[1]);
 
-            curl_setopt($curl, CURLOPT_URL, 'http://www.kika.de/' . $match[1]);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_USERAGENT, DOWNLOAD_STATION_USER_AGENT);
-            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-
-            $RawXMLData = curl_exec($curl);
-
-            if(!$RawXMLData)
+            if($RawXMLData === null)
             {
-                $this->DebugLog("Failed to retrieve XML. Error Info: " . curl_error($curl));
                 return false;
             }
 
-            curl_close($curl);
+            $this->DebugLog($RawXMLData);
 
             preg_match_all('#<asset>(.*?)<\/asset>#si', $RawXMLData, $matches);
 
@@ -122,8 +69,36 @@ class SynoFileHostingKIKAMediathek {
 
             if($bestSource['url'] !== '')
             {
+                $url = trim($bestSource['url']);
+                $pathinfo = pathinfo($url);
+                $filename = '';
+
+                $matches = array();
+
+                if(preg_match("#<channelName>(.*?)<\/channelName>#si", $RawXMLData, $matches) === 1)
+                {
+                    $filename .= $matches[1];
+                }
+
+                $matches = array();
+
+                if(preg_match("#<broadcastName>(.*?)<\/broadcastName>#si", $RawXMLData, $matches) === 1)
+                {
+                    $filename .= ' - ' . $matches[1];
+                }
+
+                if(empty($filename))
+                {
+                    $filename = $pathinfo['basename'];
+                }
+                else
+                {
+                    $filename .= '.' . $pathinfo['extension'];
+                }
+
                 $DownloadInfo = array();
-                $DownloadInfo[DOWNLOAD_URL] = trim($bestSource['url']);
+                $DownloadInfo[DOWNLOAD_URL] = $url;
+                $DownloadInfo[DOWNLOAD_FILENAME] = $this->safeFilename($filename);
 
                 return $DownloadInfo;
             }
@@ -139,12 +114,5 @@ class SynoFileHostingKIKAMediathek {
         return FALSE;
     }
 
-    private function DebugLog($message)
-    {
-        if($this->LogEnabled === true)
-        {
-            file_put_contents($this->LogPath, $message . "\n", FILE_APPEND);
-        }
-    }
 }
 ?>
