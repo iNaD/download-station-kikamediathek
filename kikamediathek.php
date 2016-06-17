@@ -2,7 +2,7 @@
 
 /**
  * @author Daniel Gehn <me@theinad.com>
- * @version 0.2b
+ * @version 0.2c
  * @copyright 2015 Daniel Gehn
  * @license http://opensource.org/licenses/MIT Licensed under MIT License
  */
@@ -25,7 +25,7 @@ class SynoFileHostingKIKAMediathek extends TheiNaDProvider {
 
         if(preg_match('#dataURL:\'(.*?)\'#si', $rawXML, $match) === 1)
         {
-            $RawXMLData = $this->curlRequest('http://www.kika.de/' . $match[1]);
+            $RawXMLData = $this->curlRequest($match[1]);
 
             if($RawXMLData === null)
             {
@@ -75,14 +75,14 @@ class SynoFileHostingKIKAMediathek extends TheiNaDProvider {
 
                 $matches = array();
 
-                if(preg_match("#<channelName>(.*?)<\/channelName>#si", $RawXMLData, $matches) === 1)
+                if(preg_match("#<topline>(.*?)<\/topline>#si", $RawXMLData, $matches) === 1)
                 {
                     $filename .= $matches[1];
                 }
 
                 $matches = array();
 
-                if(preg_match("#<broadcastName>(.*?)<\/broadcastName>#si", $RawXMLData, $matches) === 1)
+                if(preg_match("#<title>(.*?)<\/title>#si", $RawXMLData, $matches) === 1)
                 {
                     $filename .= ' - ' . $matches[1];
                 }

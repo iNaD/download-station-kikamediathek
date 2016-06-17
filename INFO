@@ -2,7 +2,7 @@
     "name": "kikamediathek",
     "hostprefix": "kika.de",
     "displayname": "KIKA Mediathek",
-    "version": "0.2b",
+    "version": "0.2c",
     "authentication": "no",
     "module": "kikamediathek.php",
     "class": "SynoFileHostingKIKAMediathek",
